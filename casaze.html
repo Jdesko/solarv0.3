@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Usina Solar - Visualização Casa</title>
+    <style>
+        :root {
+            --primary: #4285f4;
+            --generation: #34a853;    /* verde - produção */
+            --import: #ea4335;        /* vermelho - importação */
+            --consumption: #fbbc05;   /* amarelo - consumo */
+            --positive-flow: #ea4335; /* vermelho */
+            --negative-flow: #34a853; /* verde */
+            --connection-line: #666;   /* cinza para linhas */
+            --text: #202124;
+        }
+        
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .header h1 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        /* Container principal com imagem de fundo */
+        .house-monitor {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background-image: url('assets/img/casa-com-paineis-marcada.jpg');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin-bottom: 20px;
+        }
+        
+        /* Estilo dos círculos de energia */
+        .energy-circle {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+        
+        .circle-value {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+        
+        .circle-label {
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        /* Posições dos círculos baseadas nos números da imagem */
+        .circle-generation {
+            top: 70px;   /* Posição do número 1 */
+            left: 400px;
+            background-color: var(--generation);
+        }
+        
+        .circle-consumption {
+            top: 360px;   /* Posição do número 2 */
+            left: 265px;
+            background-color: var(--consumption);
+        }
+        
+        .circle-import {
+            top: 100px;   /* Posição do número 3 */
+            left: 120px;
+            background-color: var(--import);
+        }
+        
+        /* Voltagem e controles */
+        .voltage-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .voltage-header {
+            background-color: #9c27b0;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        
+        .voltage-value {
+            font-size: 28px;
+            font-weight: 500;
+            color: #9c27b0;
+        }
+        
+        .footer {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+        
+        .last-update {
+            font-size: 14px;
+            color: #9aa0a6;
+        }
+        
+        .error-message {
+            color: #d32f2f;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .refresh-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background-color: #3367d6;
+        }
+        
+        .loading {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Monitoramento Solar Residencial</h1>
+        <p>Fluxo de energia em tempo real</p>
+    </div>
+    
+    <!-- Voltagem média -->
+    <div class="voltage-container">
+        <div class="voltage-header">Voltagem da Rede</div>
+        <div class="voltage-value" id="avgVoltage">--</div>
+    </div>
+    
+    <!-- Monitor com imagem da casa -->
+    <div class="house-monitor">
+        <!-- Círculos de energia -->
+        <div class="energy-circle circle-generation" id="generationCircle">
+            <div class="circle-value" id="generationPower">--</div>
+            <div class="circle-label">Produção Solar</div>
+        </div>
+        
+        <div class="energy-circle circle-consumption" id="consumptionCircle">
+            <div class="circle-value" id="consumptionPower">--</div>
+            <div class="circle-label">Consumo</div>
+        </div>
+        
+        <div class="energy-circle circle-import" id="importCircle">
+            <div class="circle-value" id="importPower">--</div>
+            <div class="circle-label">Rede Elétrica</div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <div class="last-update" id="lastUpdate">
+            Última atualização: --
+        </div>
+        
+        <div id="errorDisplay" class="error-message"></div>
+        
+        <div class="controls">
+            <button class="refresh-btn" id="refreshBtn">
+                <span id="refreshIcon">↻</span>
+                Atualizar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO
+        // =============================================
+// VERIFICAÇÃO DE AUTENTICAÇÃO (Adicione no TOPO do script)
+// =============================================
+function checkAuth() {
+    const isLoggedIn = sessionStorage.getItem('loggedIn') === 'true';
+    
+    if (!isLoggedIn) {
+        // Redireciona para a página de login se não estiver autenticado
+        window.location.href = 'login.html'; // Ou 'index.html' se for sua página de login
+        return false;
+    }
+    return true;
+}
+
+// Executa a verificação quando a página carrega
+document.addEventListener('DOMContentLoaded', () => {
+    if (!checkAuth()) {
+        // Interrompe a execução do restante do código se não estiver autenticado
+        return;
+    }
+    
+    // SE ESTIVER AUTENTICADO, CONTINUA COM O CÓDIGO EXISTENTE
+    // ... (seu código atual de monitoramento solar)
+});
+        const CONFIG = {
+            deviceId: "c45bbee1fd27",
+            authKey: "MjFkM2IxdWlk87450512E000570046BE7579151D5C48F4FED67642847DD24161500B8A5B0CA7000733819F55FC2C",
+            refreshInterval: 5000
+        };
+
+        // Elementos da interface
+        const elements = {
+            // Voltagem
+            avgVoltage: document.getElementById('avgVoltage'),
+            
+            // Círculos
+            importPower: document.getElementById('importPower'),
+            consumptionPower: document.getElementById('consumptionPower'),
+            generationPower: document.getElementById('generationPower'),
+            
+            // Círculos completos
+            importCircle: document.getElementById('importCircle'),
+            consumptionCircle: document.getElementById('consumptionCircle'),
+            generationCircle: document.getElementById('generationCircle'),
+            
+            // Controles
+            lastUpdate: document.getElementById('lastUpdate'),
+            refreshBtn: document.getElementById('refreshBtn'),
+            refreshIcon: document.getElementById('refreshIcon'),
+            errorDisplay: document.getElementById('errorDisplay')
+        };
+
+        // Funções auxiliares
+        const helpers = {
+            formatNumber: (num) => {
+                return parseFloat(num).toFixed(0);
+            },
+            
+            formatVoltage: (num) => {
+                return parseFloat(num).toFixed(1);
+            },
+            
+            formatDateTime: (date) => {
+                return date.toLocaleTimeString('pt-BR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            },
+            
+            setLoading: (state) => {
+                if (state) {
+                    elements.refreshIcon.classList.add('loading');
+                    elements.refreshBtn.disabled = true;
+                } else {
+                    elements.refreshIcon.classList.remove('loading');
+                    elements.refreshBtn.disabled = false;
+                }
+            },
+            
+            showError: (message) => {
+                elements.errorDisplay.textContent = message;
+                setTimeout(() => {
+                    elements.errorDisplay.textContent = '';
+                }, 5000);
+            },
+            
+            resetValues: () => {
+                elements.avgVoltage.textContent = '--';
+                elements.importPower.textContent = '--';
+                elements.consumptionPower.textContent = '--';
+                elements.generationPower.textContent = '--';
+            }
+        };
+
+        // Busca os dados do Shelly EM
+        async function fetchData() {
+            helpers.setLoading(true);
+            helpers.resetValues();
+            
+            try {
+                const timestamp = Date.now();
+                const apiUrl = `https://shelly-96-eu.shelly.cloud/device/status?id=${CONFIG.deviceId}&auth_key=${CONFIG.authKey}&_=${timestamp}`;
+                
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Erro na requisição: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data || !data.isok || !data.data || !data.data.device_status) {
+                    throw new Error("Resposta inválida da API");
+                }
+                
+                const emeters = data.data.device_status.emeters;
+                const now = new Date();
+                
+                if (emeters && emeters.length >= 2) {
+                    // Voltagem média
+                    const avgVoltage = (parseFloat(emeters[0].voltage || 0) + parseFloat(emeters[1].voltage || 0)) / 2;
+                    elements.avgVoltage.textContent = helpers.formatVoltage(avgVoltage);
+                    
+                    // Canal 0 - Importação da rede
+                    const importPower = parseFloat(emeters[0].power || 0);
+                    elements.importPower.textContent = helpers.formatNumber(importPower);
+                    
+                    // Canal 1 - Geração solar
+                    const generationPower = parseFloat(emeters[1].power || 0);
+                    elements.generationPower.textContent = helpers.formatNumber(generationPower);
+                    
+                    // Calcula consumo (importação + geração)
+                    const consumptionPower = importPower + generationPower;
+                    elements.consumptionPower.textContent = helpers.formatNumber(consumptionPower);
+                    
+                    // Atualiza cores dos círculos baseado no fluxo
+                    if (importPower < 0) {
+                        // Exportando para rede - verde
+                        elements.importCircle.style.backgroundColor = 'var(--generation)';
+                    } else {
+                        // Importando da rede - vermelho
+                        elements.importCircle.style.backgroundColor = 'var(--import)';
+                    }
+                }
+                
+                elements.lastUpdate.textContent = `Última atualização: ${helpers.formatDateTime(now)}`;
+                
+            } catch (error) {
+                console.error("Erro ao buscar dados:", error);
+                helpers.showError(`Erro: ${error.message}`);
+            } finally {
+                helpers.setLoading(false);
+            }
+        }
+
+        // Configura eventos
+        elements.refreshBtn.addEventListener('click', fetchData);
+        
+        // Atualização automática
+        let intervalId;
+        function startAutoRefresh() {
+            fetchData();
+            intervalId = setInterval(fetchData, CONFIG.refreshInterval);
+        }
+        
+        // Controle de atualização quando a página está visível/oculta
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(intervalId);
+            } else {
+                startAutoRefresh();
+            }
+        });
+        
+        // Inicia o monitoramento
+        startAutoRefresh();
+    </script>
+</body>
+</html>

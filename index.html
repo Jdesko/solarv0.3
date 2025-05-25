@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Usina Solar - Login</title>
+    <style>
+        :root {
+            --primary: #4285f4;
+            --import: #ea4335;
+        }
+        
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .login-overlay {
+            background: rgba(0,0,0,0.8);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 300px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .login-box h2 {
+            margin-top: 0;
+            color: var(--primary);
+            text-align: center;
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        
+        .password-container {
+            position: relative;
+        }
+        
+        .show-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            padding: 5px;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .error-login {
+            color: var(--import);
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Overlay de Login -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h2>Acesso Restrito</h2>
+            <input type="text" id="username" class="login-input" placeholder="Usuário" required>
+            
+            <div class="password-container">
+                <input type="password" id="password" class="login-input" placeholder="Senha" required>
+                <button type="button" class="show-password" id="togglePassword" aria-label="Mostrar senha">👁️</button>
+            </div>
+            
+            <button class="login-btn" id="loginBtn">Entrar</button>
+            <div id="loginError" class="error-login"></div>
+        </div>
+    </div>
+
+    <script>
+        // Sistema de Login
+        const auth = {
+            validUsername: "jfcd",
+            validPassword: "joao1990",
+            
+            elements: {
+                overlay: document.getElementById('loginOverlay'),
+                username: document.getElementById('username'),
+                password: document.getElementById('password'),
+                loginBtn: document.getElementById('loginBtn'),
+                togglePassword: document.getElementById('togglePassword'),
+                errorMsg: document.getElementById('loginError')
+            },
+            
+            init: function() {
+                this.setupEvents();
+                this.checkAuth();
+            },
+            
+            setupEvents: function() {
+                // Evento de login
+                this.elements.loginBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.login();
+                });
+                
+                // Mostrar/ocultar senha
+                this.elements.togglePassword.addEventListener('click', () => {
+                    this.togglePasswordVisibility();
+                });
+                
+                // Login com Enter
+                this.elements.password.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.login();
+                    }
+                });
+            },
+            
+            togglePasswordVisibility: function() {
+                const passwordField = this.elements.password;
+                const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordField.setAttribute('type', type);
+                
+                // Muda o ícone
+                this.elements.togglePassword.textContent = type === 'password' ? '👁️' : '🔒';
+            },
+            
+            checkAuth: function() {
+                // Implemente sua lógica de verificação de sessão aqui
+            },
+            
+    login: function() {
+    const username = this.elements.username.value.trim();
+    const password = this.elements.password.value.trim();
+    
+    if (username === this.validUsername && password === this.validPassword) {
+        // Armazena o estado de login
+        sessionStorage.setItem('loggedIn', 'true');
+        
+        // Redireciona para a página protegida
+        window.location.href = 'casaze.html';
+    } else {
+        this.elements.errorMsg.textContent = "Credenciais inválidas!";
+        this.elements.password.value = '';
+    }
+}
+        };
+
+        // Inicializa quando o DOM estiver pronto
+        document.addEventListener('DOMContentLoaded', () => auth.init());
+    </script>
+</body>
+</html>
